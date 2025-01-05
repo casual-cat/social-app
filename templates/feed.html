@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="feed-container animated-fade-in">
+  <h2>What’s on your mind?</h2>
+  <form method="POST" action="{{ url_for('feed') }}" class="post-form">
+    <textarea name="content" rows="3" placeholder="Share an update..." required></textarea>
+    <button type="submit" class="btn-post">Post</button>
+  </form>
+  
+  <h2>Latest Posts</h2>
+  {% for post in posts %}
+    <div class="post animated-slide-up">
+      <div class="post-author">{{ post['username'] }} says:</div>
+      <div class="post-content">{{ post['content'] }}</div>
+    </div>
+  {% endfor %}
+</div>
+{% endblock %}

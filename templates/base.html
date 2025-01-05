@@ -1,0 +1,82 @@
+<!-- templates/base.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Gabi's Mini Social</title>
+  <!-- You can use Google Fonts for a nicer typeface -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="main-container">
+    <!-- Left Sidebar -->
+    <aside class="sidebar-left">
+      <div class="sidebar-brand">
+        <h2>MiniSocial</h2>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="{{ url_for('feed') }}" class="nav-item">Home</a>
+        {% if session.get('user_id') %}
+          <span class="nav-item">Welcome, {{ session.get('username') }}</span>
+          <a href="{{ url_for('logout') }}" class="nav-item">Logout</a>
+        {% else %}
+          <a href="{{ url_for('login') }}" class="nav-item">Login</a>
+          <a href="{{ url_for('signup') }}" class="nav-item">Sign Up</a>
+        {% endif %}
+      </nav>
+    </aside>
+
+    <!-- Content Wrapper -->
+    <div class="content-wrapper">
+      <!-- Top Header -->
+      <header>
+        <div class="header-title">Gabi's Mini Social App</div>
+        <div class="search-bar">
+          <input type="text" placeholder="Search...">
+        </div>
+      </header>
+
+      <!-- Flash messages -->
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div class="flash-container">
+            {% for category, message in messages %}
+              <div class="flash {{ category }}">{{ message }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+
+      <!-- Main Content -->
+      <main>
+        {% block content %}{% endblock %}
+      </main>
+    </div>
+
+    <!-- Right Sidebar -->
+    <aside class="sidebar-right">
+      <div class="sidebar-section">
+        <h3>Stories</h3>
+        <ul>
+          <li>Story 1</li>
+          <li>Story 2</li>
+          <li>Story 3</li>
+        </ul>
+      </div>
+      <div class="sidebar-section">
+        <h3>Trending</h3>
+        <ul>
+          <li>#hashtag1</li>
+          <li>#hashtag2</li>
+          <li>#hashtag3</li>
+        </ul>
+      </div>
+    </aside>
+  </div>
+
+  <footer>
+    <p>© 2025 Gabi’s Mini Social App. All rights reserved.</p>
+  </footer>
+</body>
+</html>
