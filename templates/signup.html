@@ -1,14 +1,14 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="center-container">
-  <div class="auth-form animated-fade-in">
+<div class="center-container animated-fade-in">
+  <div class="auth-form">
     <h2>Sign Up</h2>
     <form method="POST" action="{{ url_for('signup') }}">
-      <label for="username">Username</label>
-      <input id="username" name="username" type="text" required>
+      <label>Username</label>
+      <input type="text" name="username" required>
 
-      <label for="password">Password</label>
-      <input id="password" name="password" type="password" required>
+      <label>Password</label>
+      <input type="password" name="password" required>
 
       <button type="submit" class="btn-primary">Create Account</button>
     </form>

@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="profile-page-instagram animated-fade-in">
+  <div class="profile-header">
+    <div class="profile-pic-container">
+      {% if user.profile_picture %}
+        <img class="profile-picture-large" 
+             src="{{ url_for('static', filename='uploads/' ~ user.profile_picture) }}" alt="Profile Picture">
+      {% else %}
+        <img class="profile-picture-large"
+             src="{{ url_for('static', filename='uploads/default.png') }}" alt="No Profile Picture">
+      {% endif %}
+    </div>
+
+    <div class="user-info-container">
+      <div class="user-top-row">
+        <h2 class="username">{{ user.username }}</h2>
+        <!-- Potential Follow/Unfollow button here if you implement follows. -->
+      </div>
+
+      <!-- Stats Row -->
+      <ul class="profile-stats">
+        <li><span class="stat-number">{{ user_post_count }}</span> posts</li>
+        <li><span class="stat-number">{{ user_followers_count }}</span> followers</li>
+        <li><span class="stat-number">{{ user_following_count }}</span> following</li>
+      </ul>
+
+      <!-- Bio if stored -->
+      <div class="profile-bio">
+        {{ user.bio if user.bio else "" }}
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabs row (just display "Posts" for now) -->
+  <div class="profile-tabs">
+    <button class="tab-button active">Posts</button>
+    <button class="tab-button disabled">Saved</button>
+    <button class="tab-button disabled">Tagged</button>
+  </div>
+
+  <!-- Post Grid -->
+  <div class="profile-posts-grid">
+    {% for post in posts %}
+      <div class="post-tile">
+        {% if post.media_filename %}
+          {% set post_ext = post.media_filename|lower %}
+          {% if post_ext.endswith('.png') or post_ext.endswith('.jpg') or post_ext.endswith('.jpeg') or post_ext.endswith('.gif') %}
+            <img class="tile-image" src="{{ url_for('static', filename='uploads/' ~ post.media_filename) }}" alt="Post Media">
+          {% elif post_ext.endswith('.mp4') or post_ext.endswith('.mov') or post_ext.endswith('.avi') %}
+            <video class="tile-image" src="{{ url_for('static', filename='uploads/' ~ post.media_filename) }}" controls></video>
+          {% else %}
+            <p>{{ post.content }}</p>
+          {% endif %}
+        {% else %}
+          <p>{{ post.content }}</p>
+        {% endif %}
+      </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

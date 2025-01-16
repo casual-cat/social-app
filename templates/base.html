@@ -2,23 +2,28 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Gabi's Mini Social</title>
-  <!-- You can use Google Fonts for a nicer typeface -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <meta charset="UTF-8">
+  <title>InstaMini</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
 </head>
-<body>
+<!-- We add a class based on current_theme -->
+<body class="{{ current_theme|default('light') }}-theme">
   <div class="main-container">
-    <!-- Left Sidebar -->
+    <!-- LEFT SIDEBAR -->
     <aside class="sidebar-left">
       <div class="sidebar-brand">
-        <h2>MiniSocial</h2>
+        <h2>InstaMini</h2>
       </div>
       <nav class="sidebar-nav">
         <a href="{{ url_for('feed') }}" class="nav-item">Home</a>
-        {% if session.get('user_id') %}
-          <span class="nav-item">Welcome, {{ session.get('username') }}</span>
+        {% if session.get('username') %}
+          <a href="{{ url_for('profile') }}" class="nav-item">Profile</a>
+          <a href="{{ url_for('messages_list') }}" class="nav-item">Messages</a>
+          <!-- Toggle Theme -->
+          <form method="POST" action="{{ url_for('toggle_theme') }}">
+            <button class="nav-item nav-button" type="submit">Toggle Theme</button>
+          </form>
           <a href="{{ url_for('logout') }}" class="nav-item">Logout</a>
         {% else %}
           <a href="{{ url_for('login') }}" class="nav-item">Login</a>
@@ -27,17 +32,13 @@
       </nav>
     </aside>
 
-    <!-- Content Wrapper -->
+    <!-- CONTENT WRAPPER -->
     <div class="content-wrapper">
-      <!-- Top Header -->
       <header>
-        <div class="header-title">Gabi's Mini Social App</div>
-        <div class="search-bar">
-          <input type="text" placeholder="Search...">
-        </div>
+        <div class="header-title">Welcome to InstaMini</div>
       </header>
 
-      <!-- Flash messages -->
+      <!-- FLASH MESSAGES -->
       {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
           <div class="flash-container">
@@ -48,35 +49,24 @@
         {% endif %}
       {% endwith %}
 
-      <!-- Main Content -->
+      <!-- MAIN CONTENT -->
       <main>
         {% block content %}{% endblock %}
       </main>
     </div>
-
-    <!-- Right Sidebar -->
-    <aside class="sidebar-right">
-      <div class="sidebar-section">
-        <h3>Stories</h3>
-        <ul>
-          <li>Story 1</li>
-          <li>Story 2</li>
-          <li>Story 3</li>
-        </ul>
-      </div>
-      <div class="sidebar-section">
-        <h3>Trending</h3>
-        <ul>
-          <li>#hashtag1</li>
-          <li>#hashtag2</li>
-          <li>#hashtag3</li>
-        </ul>
-      </div>
-    </aside>
   </div>
 
   <footer>
-    <p>© 2025 Gabi’s Mini Social App. All rights reserved.</p>
+    <p>© 2025 InstaMini. All rights reserved.</p>
   </footer>
+
+  <!-- MODAL for story full-size -->
+  <div id="storyModal" class="modal">
+    <div class="modal-content">
+      <span id="closeModal" class="close">&times;</span>
+      <div id="modalMedia"></div>
+      <p id="modalUser"></p>
+    </div>
+  </div>
 </body>
 </html>
