@@ -1,55 +1,23 @@
-@import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600&display=swap');
+/* static/style.css */
 
+/* Pastel background for body */
 html, body {
   margin: 0;
   padding: 0;
+  background-color: #faf6ff; /* a subtle lilac pastel */
   font-family: 'Open Sans', sans-serif;
-}
-
-/* Light / Dark Body Classes */
-.light-theme {
-  background-color: #fafafa;
-  color: #333;
-}
-.dark-theme {
-  background-color: #000;
-  color: #eee;
-}
-
-/* A few overrides for dark theme, e.g. for containers */
-.dark-theme .sidebar-left,
-.dark-theme .content-wrapper,
-.dark-theme .profile-info,
-.dark-theme .stories-section,
-.dark-theme .post-form,
-.dark-theme .post,
-.dark-theme .post-tile,
-.dark-theme .modal-content {
-  background-color: #121212;
-  color: #eee;
-  border-color: #333;
-}
-.dark-theme .nav-item:hover {
-  background-color: #222;
-}
-.dark-theme .delete-button {
-  background-color: #222;
-  border-color: #555;
-  color: #ddd;
-}
-.dark-theme .post-media {
-  border-color: #444;
 }
 
 /* Container Layout */
 .main-container {
   display: grid;
-  grid-template-columns: 250px 1fr;
+  grid-template-columns: 220px 1fr;
   grid-template-rows: 100vh;
 }
 
+/* Sidebar */
 .sidebar-left {
-  background-color: #fff; /* overridden in dark-theme */
+  background-color: #fff;
   border-right: 1px solid #ddd;
   padding: 1rem;
 }
@@ -58,47 +26,41 @@ html, body {
   margin-bottom: 2rem;
 }
 .sidebar-brand h2 {
+  font-family: Arial, sans-serif;
+  color: #7c49e3;
   margin: 0;
+  font-size: 1.8rem;
 }
 .sidebar-nav .nav-item {
   display: block;
   margin: 1.2rem 0;
+  color: #444;
   text-decoration: none;
   font-weight: 600;
   padding: 0.5rem;
   border-radius: 6px;
   transition: background-color 0.2s;
-  color: #262626;
 }
-.nav-button {
-  cursor: pointer;
-  border: none;
-  width: 100%;
-  text-align: left;
-  background: none;
-  font-weight: 600;
-  padding: 0.5rem;
-  margin: 1.2rem 0;
+.sidebar-nav .nav-item:hover {
+  background-color: #f2e9ff;
 }
 
-.sidebar-nav .nav-item:hover,
-.nav-button:hover {
-  background-color: #f2f2f2; /* overridden in dark-theme */
-}
-
+/* Content Wrapper */
 .content-wrapper {
   display: flex;
   flex-direction: column;
   overflow-y: auto;
 }
+
 header {
-  background-color: #fff;
+  background-color: #f8ecff; /* pastel top bar */
   border-bottom: 1px solid #ddd;
   padding: 1rem;
 }
 .header-title {
-  font-size: 1.3rem;
-  font-weight: 600;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #7c49e3;
 }
 
 main {
@@ -106,7 +68,7 @@ main {
   padding: 1rem;
 }
 
-/* Flash Messages */
+/* Flash messages */
 .flash-container {
   margin: 1rem;
 }
@@ -132,13 +94,13 @@ main {
 footer {
   text-align: center;
   padding: 0.5rem;
-  background-color: #fff;
   font-size: 0.9rem;
-  color: #999;
+  background-color: #f2e9ff;
+  color: #555;
   border-top: 1px solid #ddd;
 }
 
-/* Center Container, e.g. for forms */
+/* Center container */
 .center-container {
   display: flex;
   justify-content: center;
@@ -146,17 +108,18 @@ footer {
   flex-direction: column;
 }
 
-/* Auth forms (login / signup) */
+/* Auth forms */
 .auth-form {
-  background-color: #fff;
-  border: 1px solid #ddd;
-  border-radius: 8px;
   width: 320px;
+  background-color: #fff;
+  border-radius: 8px;
   padding: 2rem;
+  border: 1px solid #ddd;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 .auth-form h2 {
-  text-align: center;
+  margin-top: 0;
+  color: #7c49e3;
 }
 .auth-form label {
   margin-top: 1rem;
@@ -173,17 +136,20 @@ footer {
   margin-top: 1.5rem;
   width: 100%;
   padding: 0.6rem;
-  background-color: #0095f6;
+  background-color: #7c49e3;
   color: #fff;
   font-weight: 600;
   border: none;
   border-radius: 4px;
   cursor: pointer;
 }
+.btn-primary:hover {
+  background-color: #693ec8;
+}
 
 /* Feed + Stories */
 .feed-container {
-  max-width: 600px;
+  max-width: 700px;
   margin: 0 auto;
 }
 .stories-section {
@@ -208,10 +174,10 @@ footer {
   height: 60px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid #df0053;
+  border: 2px solid #ff4081;
 }
 .story-user {
-  font-size: 0.75rem;
+  font-size: 0.8rem;
   color: #666;
   margin-top: 0.25rem;
 }
@@ -220,18 +186,17 @@ footer {
   gap: 1rem;
   align-items: center;
 }
-.btn-story-upload,
-.btn-post {
-  background-color: #0095f6;
+.btn-story-upload {
+  padding: 0.5rem 1rem;
+  background-color: #ff80ab;
   color: #fff;
   font-weight: 600;
   border: none;
   border-radius: 4px;
-  padding: 0.5rem 1rem;
+  cursor: pointer;
 }
-.btn-story-upload:hover,
-.btn-post:hover {
-  background-color: #007cd1;
+.btn-story-upload:hover {
+  background-color: #ff4081;
 }
 
 /* Post Form */
@@ -250,8 +215,19 @@ footer {
   padding: 0.5rem;
   border: 1px solid #ccc;
 }
+.btn-post {
+  background-color: #4dd0e1;
+  color: #fff;
+  font-weight: 600;
+  border: none;
+  border-radius: 4px;
+  padding: 0.5rem 1rem;
+}
+.btn-post:hover {
+  background-color: #26c6da;
+}
 
-/* Individual Post */
+/* Individual Posts */
 .post {
   background-color: #fff;
   border: 1px solid #ddd;
@@ -273,9 +249,12 @@ footer {
   object-fit: cover;
 }
 .post-author a {
-  color: #262626;
+  color: #333;
   text-decoration: none;
   font-weight: bold;
+}
+.post-author a:hover {
+  text-decoration: underline;
 }
 .post-time {
   font-size: 0.75rem;
@@ -286,17 +265,17 @@ footer {
 }
 .post-media {
   margin-top: 0.5rem;
-  width: 100%;
+  max-width: 100%;
   border-radius: 6px;
 }
 .post-actions {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.8rem;
   margin-top: 0.75rem;
 }
 .like-button {
-  background-color: #0095f6;
+  background-color: #42a5f5;
   border: none;
   border-radius: 4px;
   color: #fff;
@@ -305,88 +284,31 @@ footer {
   font-weight: 600;
 }
 .like-button:hover {
-  background-color: #007cd1;
+  background-color: #1e88e5;
 }
 .liked {
-  background-color: #ed4956; /* red for "Unlike" */
+  background-color: #e91e63; /* pink if liked */
 }
 .like-count {
   font-weight: 600;
   color: #666;
 }
 .delete-button {
-  background-color: #efefef;
-  border: 1px solid #ccc;
+  background-color: #c5cae9;
+  border: none;
   border-radius: 4px;
   color: #333;
   padding: 0.4rem 0.8rem;
   cursor: pointer;
+  font-weight: 600;
 }
 .delete-button:hover {
-  background-color: #e0e0e0;
+  background-color: #9fa8da;
 }
 
 /* Profile Pages */
-.profile-container {
-  flex-direction: column;
-  width: 600px;
-}
-.profile-info {
-  background-color: #fff;
-  width: 100%;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  text-align: center;
-  padding: 2rem;
-}
-.profile-picture {
-  width: 120px;
-  height: 120px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 2px solid #ddd;
-  margin-bottom: 1rem;
-}
-.profile-edit-form {
-  margin-top: 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-/* Post Grid (Profile) */
-.user-posts {
-  width: 600px;
-  margin-top: 2rem;
-}
-.post-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px,1fr));
-  gap: 1rem;
-}
-.post-tile {
-  background-color: #fff;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  text-align: center;
-  overflow: hidden;
-  padding: 0.5rem;
-}
-.tile-image {
-  width: 100%;
-  max-height: 250px;
-  object-fit: cover;
-  border-radius: 6px;
-}
-.tile-likes {
-  font-size: 0.8rem;
-  color: #666;
-  margin-top: 0.25rem;
-}
-
-/* Instagram-like Public Profile */
 .profile-page-instagram {
-  max-width: 935px;
+  max-width: 930px;
   margin: 2rem auto;
   display: flex;
   flex-direction: column;
@@ -423,6 +345,7 @@ footer {
   font-size: 1.8rem;
   font-weight: 400;
   margin: 0;
+  color: #333;
 }
 .profile-stats {
   display: flex;
@@ -442,9 +365,17 @@ footer {
   font-size: 0.95rem;
   color: #444;
 }
+.profile-edit-form {
+  margin-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* Tabs */
 .profile-tabs {
   display: flex;
-  justify-content: center;
+  gap: 1rem;
   border-top: 1px solid #ddd;
   margin-bottom: 1rem;
 }
@@ -456,23 +387,38 @@ footer {
   font-size: 0.9rem;
   padding: 1rem;
   cursor: pointer;
-  color: #999;
+  color: #777;
+}
+.tab-button:hover {
+  color: #333;
 }
 .tab-button.active {
   color: #333;
   border-top: 2px solid #333;
 }
-.tab-button.disabled {
-  color: #ccc;
-  cursor: default;
-}
+
+/* Post grid for profile page */
 .profile-posts-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(293px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 1rem;
 }
+.post-tile {
+  background-color: #fff;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+  text-align: center;
+  overflow: hidden;
+  padding: 0.5rem;
+}
+.tile-image {
+  width: 100%;
+  max-height: 260px;
+  object-fit: cover;
+  border-radius: 6px;
+}
 
-/* Messaging */
+/* Messages */
 .messages-page {
   max-width: 600px;
   margin: 0 auto;
@@ -499,14 +445,15 @@ footer {
   max-width: 70%;
 }
 .sent {
-  background-color: #0095f6;
+  background-color: #7c49e3; 
   color: #fff;
   margin-left: auto;
 }
 .received {
-  background-color: #f1f0f0;
+  background-color: #fff;
   color: #333;
   margin-right: auto;
+  border: 1px solid #ccc;
 }
 .msg-time {
   font-size: 0.7rem;
@@ -528,6 +475,13 @@ footer {
 .message-compose-form button {
   margin-top: 0.5rem;
   align-self: flex-end;
+  background-color: #7c49e3;
+  color: #fff;
+  font-weight: 600;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
 }
 
 /* Animations */
@@ -552,12 +506,13 @@ footer {
   }
 }
 
-/* Story Modal */
+/* Modal for stories */
 .modal {
   display: none;
   position: fixed;
   z-index: 9999;
-  left: 0; top: 0;
+  left: 0;
+  top: 0;
   width: 100%;
   height: 100%;
   background-color: rgba(0,0,0,0.7);

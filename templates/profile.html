@@ -1,49 +1,98 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="center-container animated-fade-in profile-container">
-  <div class="profile-info">
-    {% if user.profile_picture %}
-      <img class="profile-picture"
-           src="{{ url_for('static', filename='uploads/' ~ user.profile_picture) }}" alt="Profile Pic">
-    {% else %}
-      <img class="profile-picture"
-           src="{{ url_for('static', filename='uploads/default.png') }}" alt="No PFP">
-    {% endif %}
-    <h2>{{ user.username }}</h2>
-    <form method="POST" action="{{ url_for('profile') }}" enctype="multipart/form-data" class="profile-edit-form">
-      <label>Change Picture:</label>
-      <input type="file" name="profile_picture" accept="image/*">
+<div class="profile-page-instagram animated-fade-in">
+  <div class="profile-header">
+    <div class="profile-pic-container">
+      {% if user.profile_picture %}
+        <img class="profile-picture-large"
+             src="{{ url_for('static', filename='uploads/' ~ user.profile_picture) }}"
+             alt="Profile Picture" />
+      {% else %}
+        <img class="profile-picture-large"
+             src="{{ url_for('static', filename='uploads/default.png') }}"
+             alt="No Profile Picture" />
+      {% endif %}
+    </div>
 
-      <label>Edit Bio:</label>
-      <textarea name="bio" rows="2">{{ user.bio or '' }}</textarea>
-
-      <button type="submit" class="btn-primary">Update Profile</button>
-    </form>
+    <div class="user-info-container">
+      <div class="user-top-row">
+        <h2 class="username">{{ user.username }}</h2>
+      </div>
+      <ul class="profile-stats">
+        <li><span class="stat-number">{{ user_post_count }}</span> posts</li>
+        <li><span class="stat-number">0</span> followers</li>  <!-- placeholders -->
+        <li><span class="stat-number">0</span> following</li>
+      </ul>
+      <div class="profile-bio">
+        {{ user.bio if user.bio else "" }}
+      </div>
+      <form method="POST" action="{{ url_for('profile') }}" enctype="multipart/form-data" class="profile-edit-form">
+        <label>Change Picture:</label>
+        <input type="file" name="profile_picture" accept="image/*" />
+        <label>Edit Bio:</label>
+        <textarea name="bio" rows="2">{{ user.bio or '' }}</textarea>
+        <button type="submit" class="btn-primary">Update Profile</button>
+      </form>
+    </div>
   </div>
-</div>
 
-<!-- Grid of user posts -->
-{% set post_count = posts|length %}
-<div class="user-posts center-container">
-  <h2>{{ post_count }} Posts</h2>
-  <div class="post-grid">
+  <!-- Tabs: "Posts" / "Saved" -->
+  <div class="profile-tabs">
+    <button class="tab-button" onclick="showTab('posts')">Posts</button>
+    <button class="tab-button" onclick="showTab('saved')">Saved</button>
+  </div>
+
+  <div id="posts" class="profile-posts-grid" style="display: grid;">
     {% for post in posts %}
       <div class="post-tile">
         {% if post.media_filename %}
           {% set post_ext = post.media_filename|lower %}
           {% if post_ext.endswith('.png') or post_ext.endswith('.jpg') or post_ext.endswith('.jpeg') or post_ext.endswith('.gif') %}
-            <img class="tile-image" src="{{ url_for('static', filename='uploads/' ~ post.media_filename) }}" alt="Post Media">
+            <img class="tile-image"
+                 src="{{ url_for('static', filename='uploads/' ~ post.media_filename) }}"
+                 alt="Post Media" />
           {% elif post_ext.endswith('.mp4') or post_ext.endswith('.mov') or post_ext.endswith('.avi') %}
-            <video class="tile-image" src="{{ url_for('static', filename='uploads/' ~ post.media_filename) }}" controls></video>
+            <video class="tile-image"
+                   src="{{ url_for('static', filename='uploads/' ~ post.media_filename) }}"
+                   controls></video>
           {% else %}
             <p>{{ post.content }}</p>
           {% endif %}
         {% else %}
           <p>{{ post.content }}</p>
         {% endif %}
-        <p class="tile-likes">{{ post.like_count }} likes</p>
+      </div>
+    {% endfor %}
+  </div>
+
+  <div id="saved" class="profile-posts-grid" style="display: none;">
+    {% for post in saved_posts %}
+      <div class="post-tile">
+        {% if post.media_filename %}
+          {% set sp_ext = post.media_filename|lower %}
+          {% if sp_ext.endswith('.png') or sp_ext.endswith('.jpg') or sp_ext.endswith('.jpeg') or sp_ext.endswith('.gif') %}
+            <img class="tile-image"
+                 src="{{ url_for('static', filename='uploads/' ~ post.media_filename) }}"
+                 alt="Saved Media" />
+          {% elif sp_ext.endswith('.mp4') or sp_ext.endswith('.mov') or sp_ext.endswith('.avi') %}
+            <video class="tile-image"
+                   src="{{ url_for('static', filename='uploads/' ~ post.media_filename) }}"
+                   controls></video>
+          {% else %}
+            <p>{{ post.content }}</p>
+          {% endif %}
+        {% else %}
+          <p>{{ post.content }}</p>
+        {% endif %}
       </div>
     {% endfor %}
   </div>
 </div>
+
+<script>
+function showTab(tab) {
+  document.getElementById('posts').style.display = (tab === 'posts') ? 'grid' : 'none';
+  document.getElementById('saved').style.display = (tab === 'saved') ? 'grid' : 'none';
+}
+</script>
 {% endblock %}

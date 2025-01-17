@@ -1,18 +1,15 @@
+<!-- login.html -->
 {% extends "base.html" %}
 {% block content %}
-<div class="center-container animated-fade-in">
-  <div class="auth-form">
-    <h2>Login</h2>
-    <form method="POST" action="{{ url_for('login') }}">
-      <label>Username</label>
-      <input type="text" name="username" required>
-
-      <label>Password</label>
-      <input type="password" name="password" required>
-
-      <button type="submit" class="btn-primary">Login</button>
-    </form>
-    <p>Don’t have an account? <a href="{{ url_for('signup') }}">Sign Up</a></p>
-  </div>
+<div class="center-container auth-form">
+  <h2>Login</h2>
+  <form method="POST" action="{{ url_for('login') }}">
+    <label>Username</label>
+    <input type="text" name="username" required />
+    <label>Password</label>
+    <input type="password" name="password" required />
+    <button type="submit" class="btn-primary">Login</button>
+  </form>
+  <p>Don't have an account? <a href="{{ url_for('signup') }}">Sign up</a></p>
 </div>
 {% endblock %}

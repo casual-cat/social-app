@@ -6,24 +6,17 @@ function openStoryModal(mediaUrl, username) {
   const modalMedia = document.getElementById("modalMedia");
   const modalUser = document.getElementById("modalUser");
 
-  // Clear previous content
+  // Clear old
   modalMedia.innerHTML = "";
 
   const lowerUrl = mediaUrl.toLowerCase();
-  if (
-    lowerUrl.endsWith(".png") ||
-    lowerUrl.endsWith(".jpg") ||
-    lowerUrl.endsWith(".jpeg") ||
-    lowerUrl.endsWith(".gif")
-  ) {
+  if (lowerUrl.endsWith(".png") || lowerUrl.endsWith(".jpg") ||
+      lowerUrl.endsWith(".jpeg") || lowerUrl.endsWith(".gif")) {
     const img = document.createElement("img");
     img.src = mediaUrl;
     modalMedia.appendChild(img);
-  } else if (
-    lowerUrl.endsWith(".mp4") ||
-    lowerUrl.endsWith(".mov") ||
-    lowerUrl.endsWith(".avi")
-  ) {
+  } else if (lowerUrl.endsWith(".mp4") || lowerUrl.endsWith(".mov") ||
+             lowerUrl.endsWith(".avi")) {
     const vid = document.createElement("video");
     vid.src = mediaUrl;
     vid.controls = true;
@@ -38,12 +31,14 @@ function openStoryModal(mediaUrl, username) {
   modal.style.display = "block";
 
   // Hook up close
-  const xClose = document.getElementById("closeModal");
-  xClose.onclick = () => {
-    modal.style.display = "none";
-  };
+  const xClose = document.getElementById("closeModal") || document.querySelector(".close");
+  if (xClose) {
+    xClose.onclick = () => {
+      modal.style.display = "none";
+    };
+  }
 
-  // Close if user clicks outside
+  // Close if click outside
   window.onclick = (event) => {
     if (event.target === modal) {
       modal.style.display = "none";

@@ -7,8 +7,7 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   <script src="{{ url_for('static', filename='script.js') }}"></script>
 </head>
-<!-- We add a class based on current_theme -->
-<body class="{{ current_theme|default('light') }}-theme">
+<body>
   <div class="main-container">
     <!-- LEFT SIDEBAR -->
     <aside class="sidebar-left">
@@ -17,13 +16,9 @@
       </div>
       <nav class="sidebar-nav">
         <a href="{{ url_for('feed') }}" class="nav-item">Home</a>
-        {% if session.get('username') %}
+        {% if session.get('user_id') %}
           <a href="{{ url_for('profile') }}" class="nav-item">Profile</a>
           <a href="{{ url_for('messages_list') }}" class="nav-item">Messages</a>
-          <!-- Toggle Theme -->
-          <form method="POST" action="{{ url_for('toggle_theme') }}">
-            <button class="nav-item nav-button" type="submit">Toggle Theme</button>
-          </form>
           <a href="{{ url_for('logout') }}" class="nav-item">Logout</a>
         {% else %}
           <a href="{{ url_for('login') }}" class="nav-item">Login</a>
@@ -49,7 +44,6 @@
         {% endif %}
       {% endwith %}
 
-      <!-- MAIN CONTENT -->
       <main>
         {% block content %}{% endblock %}
       </main>
@@ -57,7 +51,7 @@
   </div>
 
   <footer>
-    <p>© 2025 InstaMini. All rights reserved.</p>
+    <p>© 2025 InstaMini — All rights reserved.</p>
   </footer>
 
   <!-- MODAL for story full-size -->

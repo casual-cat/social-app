@@ -3,27 +3,28 @@
 <div class="feed-container animated-fade-in">
   <!-- STORIES -->
   <div class="stories-section">
-    <h3>Stories</h3>
+    <h3>Stories (24h)</h3>
     <div class="stories-bar">
       {% for story in stories %}
-        <div class="story-bubble"
+        <div class="story-bubble" 
              onclick="openStoryModal('{{ url_for('static', filename='uploads/' ~ story.media_filename) }}',
                                       '{{ story.username }}')">
           {% set story_ext = story.media_filename|lower %}
           {% if story_ext.endswith('.png') or story_ext.endswith('.jpg') or story_ext.endswith('.jpeg') or story_ext.endswith('.gif') %}
-            <img src="{{ url_for('static', filename='uploads/' ~ story.media_filename) }}" alt="Story">
+            <img src="{{ url_for('static', filename='uploads/' ~ story.media_filename) }}" alt="Story" />
           {% elif story_ext.endswith('.mp4') or story_ext.endswith('.mov') or story_ext.endswith('.avi') %}
             <video src="{{ url_for('static', filename='uploads/' ~ story.media_filename) }}"></video>
           {% else %}
-            <p>Unsupported</p>
+            <p>Unsupported format</p>
           {% endif %}
           <span class="story-user">{{ story.username }}</span>
         </div>
       {% endfor %}
     </div>
+    <!-- Upload story form -->
     <form method="POST" action="{{ url_for('upload_story') }}" enctype="multipart/form-data" class="story-upload-form">
       <label>New Story:</label>
-      <input type="file" name="story_file" accept="image/*,video/*">
+      <input type="file" name="story_file" accept="image/*,video/*" />
       <button type="submit" class="btn-story-upload">Upload</button>
     </form>
   </div>
@@ -33,70 +34,86 @@
   <form method="POST" action="{{ url_for('feed') }}" enctype="multipart/form-data" class="post-form">
     <textarea name="content" rows="3" placeholder="What's on your mind?"></textarea>
     <label>Attach image/video (optional):</label>
-    <input type="file" name="media_file" accept="image/*,video/*">
+    <input type="file" name="media_file" accept="image/*,video/*" />
     <button type="submit" class="btn-post">Post</button>
   </form>
 
-  <!-- POSTS -->
+  <!-- LATEST POSTS -->
   <h2>Latest Posts</h2>
-  {% for post in posts %}
-    <div class="post animated-slide-up">
-      <div class="post-header">
-        <!-- Profile Picture -->
-        {% if post.profile_picture %}
-          <a href="{{ url_for('user_profile', username=post.username) }}">
-            <img class="post-profile-pic" 
-                 src="{{ url_for('static', filename='uploads/' ~ post.profile_picture) }}" alt="Profile">
-          </a>
-        {% else %}
-          <a href="{{ url_for('user_profile', username=post.username) }}">
-            <img class="post-profile-pic"
-                 src="{{ url_for('static', filename='uploads/default.png') }}" alt="No PFP">
-          </a>
-        {% endif %}
-        <div>
-          <div class="post-author">
+  {% if posts %}
+    {% for post in posts %}
+      <div class="post animated-slide-up">
+        <div class="post-header">
+          {% if post.profile_picture %}
             <a href="{{ url_for('user_profile', username=post.username) }}">
-              {{ post.username }}
+              <img class="post-profile-pic"
+                   src="{{ url_for('static', filename='uploads/' ~ post.profile_picture) }}"
+                   alt="Profile Pic" />
             </a>
+          {% else %}
+            <a href="{{ url_for('user_profile', username=post.username) }}">
+              <img class="post-profile-pic"
+                   src="{{ url_for('static', filename='uploads/default.png') }}"
+                   alt="No Profile Pic" />
+            </a>
+          {% endif %}
+          <div>
+            <div class="post-author">
+              <a href="{{ url_for('user_profile', username=post.username) }}">
+                {{ post.username }}
+              </a>
+            </div>
+            <div class="post-time">{{ post.created_at }}</div>
           </div>
-          <div class="post-time">{{ post.created_at }}</div>
+        </div>
+
+        <div class="post-content">
+          <p>{{ post.content }}</p>
+          {% if post.media_filename %}
+            {% set post_ext = post.media_filename|lower %}
+            {% if post_ext.endswith('.png') or post_ext.endswith('.jpg') or post_ext.endswith('.jpeg') or post_ext.endswith('.gif') %}
+              <img class="post-media"
+                   src="{{ url_for('static', filename='uploads/' ~ post.media_filename) }}"
+                   alt="Post Media" />
+            {% elif post_ext.endswith('.mp4') or post_ext.endswith('.mov') or post_ext.endswith('.avi') %}
+              <video class="post-media"
+                     src="{{ url_for('static', filename='uploads/' ~ post.media_filename) }}"
+                     controls></video>
+            {% endif %}
+          {% endif %}
+        </div>
+
+        <div class="post-actions">
+          <!-- Like -->
+          <form method="POST" action="{{ url_for('like_post', post_id=post.id) }}" style="display: inline;">
+            {% if post.user_has_liked %}
+              <button type="submit" class="like-button liked">Unlike</button>
+            {% else %}
+              <button type="submit" class="like-button">Like</button>
+            {% endif %}
+            <span class="like-count">{{ post.like_count }} likes</span>
+          </form>
+
+          <!-- Save -->
+          <form method="POST" action="{{ url_for('save_post', post_id=post.id) }}" style="display: inline;">
+            {% if post.user_has_saved %}
+              <button type="submit" class="delete-button">Unsave</button>
+            {% else %}
+              <button type="submit" class="delete-button">Save</button>
+            {% endif %}
+          </form>
+
+          <!-- Delete if owner -->
+          {% if post.user_id == current_user_id %}
+            <form method="POST" action="{{ url_for('delete_post', post_id=post.id) }}" style="display: inline;">
+              <button type="submit" class="delete-button">Delete</button>
+            </form>
+          {% endif %}
         </div>
       </div>
-
-      <!-- Content -->
-      <div class="post-content">
-        <p>{{ post.content }}</p>
-        {% if post.media_filename %}
-          {% set post_ext = post.media_filename|lower %}
-          {% if post_ext.endswith('.png') or post_ext.endswith('.jpg') or post_ext.endswith('.jpeg') or post_ext.endswith('.gif') %}
-            <img class="post-media" src="{{ url_for('static', filename='uploads/' ~ post.media_filename) }}" alt="Post Media">
-          {% elif post_ext.endswith('.mp4') or post_ext.endswith('.mov') or post_ext.endswith('.avi') %}
-            <video class="post-media" src="{{ url_for('static', filename='uploads/' ~ post.media_filename) }}" controls></video>
-          {% endif %}
-        {% endif %}
-      </div>
-
-      <!-- Likes + Delete -->
-      <div class="post-actions">
-        <!-- Like -->
-        <form method="POST" action="{{ url_for('like_post', post_id=post.id) }}">
-          {% if post.user_has_liked %}
-            <button type="submit" class="like-button liked">Unlike</button>
-          {% else %}
-            <button type="submit" class="like-button">Like</button>
-          {% endif %}
-          <span class="like-count">{{ post.like_count }} likes</span>
-        </form>
-
-        <!-- Delete if owner -->
-        {% if post.user_id == current_user_id %}
-          <form method="POST" action="{{ url_for('delete_post', post_id=post.id) }}" style="display: inline;">
-            <button type="submit" class="delete-button">Delete</button>
-          </form>
-        {% endif %}
-      </div>
-    </div>
-  {% endfor %}
+    {% endfor %}
+  {% else %}
+    <p>No posts yet! Be the first to post.</p>
+  {% endif %}
 </div>
 {% endblock %}
