@@ -9,7 +9,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
-app.secret_key = "YOUR_SUPER_SECRET_KEY"  # Replace with something secure
+app.secret_key = "YOUR_SUPER_SECRET_KEY"  # Replace with something more secure
 
 # ---------------- CONFIG ----------------
 DATABASE = "social.db"
@@ -127,7 +127,7 @@ def signup():
         conn = get_db_connection()
         try:
             conn.execute("""
-                INSERT INTO users (username, password_hash)
+                INSERT INTO users (username, password_hash) 
                 VALUES (?, ?)
             """, (username, password_hash))
             conn.commit()
@@ -146,9 +146,7 @@ def login():
         password = request.form["password"]
 
         conn = get_db_connection()
-        user = conn.execute("""
-            SELECT * FROM users WHERE username=?
-        """, (username,)).fetchone()
+        user = conn.execute("SELECT * FROM users WHERE username=?", (username,)).fetchone()
         conn.close()
 
         if user and check_password_hash(user["password_hash"], password):
@@ -174,7 +172,8 @@ def feed():
         return redirect(url_for("login"))
 
     conn = get_db_connection()
-    # Create new post
+
+    # Create a new post
     if request.method == "POST":
         content = request.form.get("content", "").strip()
         media_file = request.files.get("media_file")
@@ -193,7 +192,7 @@ def feed():
             """, (user_id, content, media_filename, datetime.now()))
             conn.commit()
 
-    # STORIES (<24h)
+    # Fetch stories (<24h old)
     cutoff = datetime.now() - timedelta(hours=24)
     stories = conn.execute("""
         SELECT s.id, s.media_filename, s.created_at,
@@ -204,7 +203,7 @@ def feed():
         ORDER BY s.created_at DESC
     """, (cutoff,)).fetchall()
 
-    # POSTS + likes + saved
+    # Fetch posts
     raw_posts = conn.execute("""
         SELECT p.*, u.username, u.profile_picture
         FROM posts p
@@ -214,15 +213,18 @@ def feed():
 
     posts = []
     for p in raw_posts:
-        # likes
-        row_like = conn.execute("SELECT COUNT(*) AS c FROM likes WHERE post_id=?", (p["id"],)).fetchone()
-        like_count = row_like["c"] if row_like else 0
+        # Like count
+        like_row = conn.execute("SELECT COUNT(*) AS c FROM likes WHERE post_id=?", (p["id"],)).fetchone()
+        like_count = like_row["c"] if like_row else 0
 
-        user_like = conn.execute("SELECT id FROM likes WHERE post_id=? AND user_id=?", (p["id"], user_id)).fetchone()
+        # user has liked
+        user_like = conn.execute("SELECT id FROM likes WHERE post_id=? AND user_id=?",
+                                 (p["id"], user_id)).fetchone()
         user_has_liked = True if user_like else False
 
-        # saved
-        saved_row = conn.execute("SELECT id FROM saved_posts WHERE post_id=? AND user_id=?", (p["id"], user_id)).fetchone()
+        # user has saved
+        saved_row = conn.execute("SELECT id FROM saved_posts WHERE post_id=? AND user_id=?",
+                                 (p["id"], user_id)).fetchone()
         user_has_saved = True if saved_row else False
 
         posts.append({
@@ -239,48 +241,60 @@ def feed():
         })
 
     conn.close()
-    return render_template("feed.html",
-                           stories=stories,
-                           posts=posts,
-                           current_user_id=user_id)
+    return render_template("feed.html", stories=stories, posts=posts, current_user_id=user_id)
 
-@app.route("/like/<int:post_id>", methods=["POST"])
-def like_post(post_id):
+
+# -- LIKE/UNLIKE via AJAX (no full refresh) --
+@app.route("/like_api/<int:post_id>", methods=["POST"])
+def like_api(post_id):
+    """Toggle like for a post, return JSON with updated like_count and status."""
     user_id = get_current_user_id()
     if not user_id:
-        flash("You must be logged in to like a post.", "error")
-        return redirect(url_for("login"))
+        return jsonify({"error": "Not logged in"}), 403
 
     conn = get_db_connection()
-    row = conn.execute("""
-        SELECT id FROM likes WHERE post_id=? AND user_id=?
-    """, (post_id, user_id)).fetchone()
+    row = conn.execute("SELECT id FROM likes WHERE post_id=? AND user_id=?", (post_id, user_id)).fetchone()
     if row:
+        # unlike
         conn.execute("DELETE FROM likes WHERE id=?", (row["id"],))
+        action = "unliked"
     else:
+        # like
         conn.execute("INSERT INTO likes (post_id, user_id) VALUES (?, ?)", (post_id, user_id))
+        action = "liked"
     conn.commit()
-    conn.close()
-    return redirect(url_for("feed"))
 
-@app.route("/save/<int:post_id>", methods=["POST"])
-def save_post(post_id):
+    # get new like_count
+    like_row = conn.execute("SELECT COUNT(*) AS c FROM likes WHERE post_id=?", (post_id,)).fetchone()
+    conn.close()
+    like_count = like_row["c"] if like_row else 0
+
+    return jsonify({"status": action, "like_count": like_count})
+
+
+# -- SAVE/UNSAVE via AJAX (no full refresh) --
+@app.route("/save_api/<int:post_id>", methods=["POST"])
+def save_api(post_id):
+    """Toggle save for a post, return JSON with updated status."""
     user_id = get_current_user_id()
     if not user_id:
-        flash("You must be logged in to save a post.", "error")
-        return redirect(url_for("login"))
+        return jsonify({"error": "Not logged in"}), 403
 
     conn = get_db_connection()
-    row = conn.execute("""
-        SELECT id FROM saved_posts WHERE post_id=? AND user_id=?
-    """, (post_id, user_id)).fetchone()
+    row = conn.execute("SELECT id FROM saved_posts WHERE post_id=? AND user_id=?", (post_id, user_id)).fetchone()
     if row:
+        # unsave
         conn.execute("DELETE FROM saved_posts WHERE id=?", (row["id"],))
+        action = "unsaved"
     else:
+        # save
         conn.execute("INSERT INTO saved_posts (post_id, user_id) VALUES (?, ?)", (post_id, user_id))
+        action = "saved"
     conn.commit()
     conn.close()
-    return redirect(url_for("feed"))
+
+    return jsonify({"status": action})
+
 
 @app.route("/delete_post/<int:post_id>", methods=["POST"])
 def delete_post(post_id):
@@ -295,17 +309,18 @@ def delete_post(post_id):
         flash("Post not found!", "error")
         conn.close()
         return redirect(url_for("feed"))
-
     if post["user_id"] != user_id:
         flash("You cannot delete someone else's post!", "error")
         conn.close()
         return redirect(url_for("feed"))
 
+    # remove post, likes, saved
     conn.execute("DELETE FROM posts WHERE id=?", (post_id,))
     conn.execute("DELETE FROM likes WHERE post_id=?", (post_id,))
     conn.execute("DELETE FROM saved_posts WHERE post_id=?", (post_id,))
     conn.commit()
     conn.close()
+
     flash("Post deleted!", "success")
     return redirect(url_for("feed"))
 
@@ -359,10 +374,10 @@ def profile():
         conn.commit()
         flash("Profile updated!", "success")
 
-    # re-fetch
+    # re-fetch user
     user = conn.execute("SELECT * FROM users WHERE id=?", (user_id,)).fetchone()
 
-    # posts
+    # user posts
     raw_posts = conn.execute("""
         SELECT p.*, u.username, u.profile_picture
         FROM posts p
@@ -370,7 +385,6 @@ def profile():
         WHERE p.user_id=?
         ORDER BY p.created_at DESC
     """, (user_id,)).fetchall()
-
     posts = []
     for p in raw_posts:
         lr = conn.execute("SELECT COUNT(*) AS c FROM likes WHERE post_id=?", (p["id"],)).fetchone()
@@ -385,7 +399,7 @@ def profile():
             "like_count": like_count
         })
 
-    # saved
+    # user saved
     raw_saved = conn.execute("""
         SELECT p.*, u.username, u.profile_picture
         FROM saved_posts s
@@ -394,11 +408,10 @@ def profile():
         WHERE s.user_id=?
         ORDER BY p.created_at DESC
     """, (user_id,)).fetchall()
-
     saved_posts = []
     for sp in raw_saved:
         lr = conn.execute("SELECT COUNT(*) AS c FROM likes WHERE post_id=?", (sp["id"],)).fetchone()
-        like_count = lr["c"] if lr else 0
+        lc = lr["c"] if lr else 0
         saved_posts.append({
             "id": sp["id"],
             "content": sp["content"],
@@ -406,7 +419,7 @@ def profile():
             "created_at": sp["created_at"],
             "username": sp["username"],
             "profile_picture": sp["profile_picture"],
-            "like_count": like_count
+            "like_count": lc
         })
 
     conn.close()
@@ -471,13 +484,12 @@ def messages_list():
         SELECT DISTINCT u.id, u.username
         FROM messages m
         JOIN users u ON (u.id = m.sender_id OR u.id = m.recipient_id)
-        WHERE (m.sender_id=? OR m.recipient_id=?)
-          AND u.id<>?
+        WHERE (m.sender_id=? OR m.recipient_id=?) AND u.id<>?
     """, (user_id, user_id, user_id)).fetchall()
     conn.close()
 
-    conversation_partners = [dict(r) for r in rows]
-    return render_template("messages.html", conversation_partners=conversation_partners)
+    partners = [dict(r) for r in rows]
+    return render_template("messages.html", conversation_partners=partners)
 
 @app.route("/messages/<username>", methods=["GET", "POST"])
 def direct_messages(username):
@@ -530,46 +542,9 @@ def direct_messages(username):
                            other_user=other_user,
                            messages_list=messages_list)
 
-# Live Chat JSON Endpoint
-@app.route("/messages_api/<username>")
-def messages_api(username):
-    user_id = get_current_user_id()
-    if not user_id:
-        return jsonify({"error": "Not logged in"}), 403
-
-    other_user = get_user_by_username(username)
-    if not other_user:
-        return jsonify({"error": "User does not exist"}), 404
-
-    other_id = other_user["id"]
-    conn = get_db_connection()
-    msgs = conn.execute("""
-        SELECT m.*, s.username as sender_name, r.username as recipient_name
-        FROM messages m
-        JOIN users s ON s.id = m.sender_id
-        JOIN users r ON r.id = m.recipient_id
-        WHERE (m.sender_id=? AND m.recipient_id=?)
-           OR (m.sender_id=? AND m.recipient_id=?)
-        ORDER BY m.created_at ASC
-    """, (user_id, other_id, other_id, user_id)).fetchall()
-    conn.close()
-
-    data = []
-    for msg in msgs:
-        data.append({
-            "id": msg["id"],
-            "content": msg["content"],
-            "created_at": str(msg["created_at"]),
-            "sender_id": msg["sender_id"],
-            "sender_name": msg["sender_name"],
-            "recipient_id": msg["recipient_id"],
-            "recipient_name": msg["recipient_name"]
-        })
-    return jsonify({"messages": data})
-
 @app.route("/uploads/<filename>")
 def uploads(filename):
     return send_from_directory(app.config["UPLOAD_FOLDER"], filename)
 
 if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=5001)
+    app.run(debug=True)
