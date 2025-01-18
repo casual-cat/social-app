@@ -12,10 +12,10 @@
         </li>
       {% endfor %}
     </ul>
-    <p>If no conversations yet, try “Message” from a user profile.</p>
+    <p>If no conversations yet, try “Message” from a user profile or wait for someone to message you.</p>
   {% else %}
     <h2>Chat with {{ other_user.username }}</h2>
-    <div class="message-thread">
+    <div id="messageThread" class="message-thread">
       {% for msg in messages_list %}
         <div class="message-bubble {% if msg.sender_id == session.get('user_id') %} sent {% else %} received {% endif %}">
           <p>{{ msg.content }}</p>
@@ -24,10 +24,48 @@
       {% endfor %}
     </div>
 
-    <form method="POST" action="{{ url_for('direct_messages', username=other_user.username) }}" class="message-compose-form">
+    <form method="POST" action="{{ url_for('direct_messages', username=other_user.username) }}" class="message-compose-form" id="messageForm">
       <textarea name="content" rows="2" placeholder="Type a message..."></textarea>
       <button type="submit" class="btn-primary">Send</button>
     </form>
   {% endif %}
 </div>
+
+{% if conversation %}
+<script>
+  const userID = {{ session.get('user_id')|default('null') }};
+  const otherUser = "{{ other_user.username }}";
+  const messageThread = document.getElementById("messageThread");
+
+  // Poll for new messages every 3 seconds
+  setInterval(() => {
+    fetch(`/messages_api/${otherUser}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.messages) {
+          // Clear existing
+          messageThread.innerHTML = "";
+          // Rebuild chat
+          data.messages.forEach(msg => {
+            const bubble = document.createElement("div");
+            bubble.classList.add("message-bubble");
+            if (msg.sender_id == userID) {
+              bubble.classList.add("sent");
+            } else {
+              bubble.classList.add("received");
+            }
+            bubble.innerHTML = `
+              <p>${msg.content}</p>
+              <span class="msg-time">${msg.created_at}</span>
+            `;
+            messageThread.appendChild(bubble);
+          });
+          // scroll to bottom
+          messageThread.scrollTop = messageThread.scrollHeight;
+        }
+      })
+      .catch(err => console.log("Error fetching messages:", err));
+  }, 3000);
+</script>
+{% endif %}
 {% endblock %}

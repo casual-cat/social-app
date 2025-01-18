@@ -1,4 +1,3 @@
-<!-- templates/base.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -9,7 +8,7 @@
 </head>
 <body>
   <div class="main-container">
-    <!-- LEFT SIDEBAR -->
+    <!-- Left Sidebar -->
     <aside class="sidebar-left">
       <div class="sidebar-brand">
         <h2>InstaMini</h2>
@@ -27,13 +26,12 @@
       </nav>
     </aside>
 
-    <!-- CONTENT WRAPPER -->
+    <!-- Content -->
     <div class="content-wrapper">
       <header>
         <div class="header-title">Welcome to InstaMini</div>
       </header>
 
-      <!-- FLASH MESSAGES -->
       {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
           <div class="flash-container">
@@ -54,7 +52,7 @@
     <p>© 2025 InstaMini — All rights reserved.</p>
   </footer>
 
-  <!-- MODAL for story full-size -->
+  <!-- Story Modal -->
   <div id="storyModal" class="modal">
     <div class="modal-content">
       <span id="closeModal" class="close">&times;</span>

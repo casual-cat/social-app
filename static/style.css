@@ -1,14 +1,12 @@
-/* static/style.css */
+/* style.css - Pastel, Instagram-like, plus custom file input styling */
 
-/* Pastel background for body */
 html, body {
   margin: 0;
   padding: 0;
-  background-color: #faf6ff; /* a subtle lilac pastel */
+  background-color: #faf6ff; /* pastel lilac */
   font-family: 'Open Sans', sans-serif;
 }
 
-/* Container Layout */
 .main-container {
   display: grid;
   grid-template-columns: 220px 1fr;
@@ -26,7 +24,6 @@ html, body {
   margin-bottom: 2rem;
 }
 .sidebar-brand h2 {
-  font-family: Arial, sans-serif;
   color: #7c49e3;
   margin: 0;
   font-size: 1.8rem;
@@ -45,7 +42,6 @@ html, body {
   background-color: #f2e9ff;
 }
 
-/* Content Wrapper */
 .content-wrapper {
   display: flex;
   flex-direction: column;
@@ -53,7 +49,7 @@ html, body {
 }
 
 header {
-  background-color: #f8ecff; /* pastel top bar */
+  background-color: #f8ecff;
   border-bottom: 1px solid #ddd;
   padding: 1rem;
 }
@@ -100,7 +96,7 @@ footer {
   border-top: 1px solid #ddd;
 }
 
-/* Center container */
+/* Center Container */
 .center-container {
   display: flex;
   justify-content: center;
@@ -108,7 +104,7 @@ footer {
   flex-direction: column;
 }
 
-/* Auth forms */
+/* Auth Forms */
 .auth-form {
   width: 320px;
   background-color: #fff;
@@ -169,7 +165,8 @@ footer {
   text-align: center;
   cursor: pointer;
 }
-.story-bubble img, .story-bubble video {
+.story-bubble img,
+.story-bubble video {
   width: 60px;
   height: 60px;
   border-radius: 50%;
@@ -186,6 +183,8 @@ footer {
   gap: 1rem;
   align-items: center;
 }
+
+/* Buttons */
 .btn-story-upload {
   padding: 0.5rem 1rem;
   background-color: #ff80ab;
@@ -197,6 +196,45 @@ footer {
 }
 .btn-story-upload:hover {
   background-color: #ff4081;
+}
+.btn-post {
+  background-color: #4dd0e1;
+  color: #fff;
+  font-weight: 600;
+  border: none;
+  border-radius: 4px;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+}
+.btn-post:hover {
+  background-color: #26c6da;
+}
+.delete-button {
+  background-color: #c5cae9;
+  border: none;
+  border-radius: 4px;
+  color: #333;
+  padding: 0.4rem 0.8rem;
+  cursor: pointer;
+  font-weight: 600;
+}
+.delete-button:hover {
+  background-color: #9fa8da;
+}
+.like-button {
+  background-color: #42a5f5;
+  border: none;
+  border-radius: 4px;
+  color: #fff;
+  padding: 0.4rem 0.8rem;
+  cursor: pointer;
+  font-weight: 600;
+}
+.like-button:hover {
+  background-color: #1e88e5;
+}
+.liked {
+  background-color: #e91e63; /* pink if liked */
 }
 
 /* Post Form */
@@ -215,19 +253,8 @@ footer {
   padding: 0.5rem;
   border: 1px solid #ccc;
 }
-.btn-post {
-  background-color: #4dd0e1;
-  color: #fff;
-  font-weight: 600;
-  border: none;
-  border-radius: 4px;
-  padding: 0.5rem 1rem;
-}
-.btn-post:hover {
-  background-color: #26c6da;
-}
 
-/* Individual Posts */
+/* Post Display */
 .post {
   background-color: #fff;
   border: 1px solid #ddd;
@@ -274,39 +301,12 @@ footer {
   gap: 0.8rem;
   margin-top: 0.75rem;
 }
-.like-button {
-  background-color: #42a5f5;
-  border: none;
-  border-radius: 4px;
-  color: #fff;
-  padding: 0.4rem 0.8rem;
-  cursor: pointer;
-  font-weight: 600;
-}
-.like-button:hover {
-  background-color: #1e88e5;
-}
-.liked {
-  background-color: #e91e63; /* pink if liked */
-}
 .like-count {
   font-weight: 600;
   color: #666;
 }
-.delete-button {
-  background-color: #c5cae9;
-  border: none;
-  border-radius: 4px;
-  color: #333;
-  padding: 0.4rem 0.8rem;
-  cursor: pointer;
-  font-weight: 600;
-}
-.delete-button:hover {
-  background-color: #9fa8da;
-}
 
-/* Profile Pages */
+/* Profile Page */
 .profile-page-instagram {
   max-width: 930px;
   margin: 2rem auto;
@@ -397,7 +397,7 @@ footer {
   border-top: 2px solid #333;
 }
 
-/* Post grid for profile page */
+/* Post Grid */
 .profile-posts-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
@@ -445,7 +445,7 @@ footer {
   max-width: 70%;
 }
 .sent {
-  background-color: #7c49e3; 
+  background-color: #7c49e3;
   color: #fff;
   margin-left: auto;
 }
@@ -511,8 +511,7 @@ footer {
   display: none;
   position: fixed;
   z-index: 9999;
-  left: 0;
-  top: 0;
+  left: 0; top: 0;
   width: 100%;
   height: 100%;
   background-color: rgba(0,0,0,0.7);
@@ -544,4 +543,26 @@ footer {
   max-width: 100%;
   border-radius: 6px;
   margin-bottom: 1rem;
+}
+
+/* Custom File Label */
+.custom-file-label {
+  background-color: #e1bee7;
+  color: #fff;
+  font-weight: 600;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  display: inline-block;
+  position: relative;
+  margin-right: 0.5rem;
+}
+.custom-file-label:hover {
+  background-color: #ce93d8;
+}
+.custom-file-label input[type="file"] {
+  display: none; /* hide the real file input */
+}
+.custom-file-label span {
+  pointer-events: none;
 }

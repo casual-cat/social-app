@@ -6,37 +6,44 @@
       {% if user.profile_picture %}
         <img class="profile-picture-large"
              src="{{ url_for('static', filename='uploads/' ~ user.profile_picture) }}"
-             alt="Profile Picture" />
+             alt="Profile Pic"/>
       {% else %}
         <img class="profile-picture-large"
              src="{{ url_for('static', filename='uploads/default.png') }}"
-             alt="No Profile Picture" />
+             alt="No Profile Pic"/>
       {% endif %}
     </div>
-
     <div class="user-info-container">
       <div class="user-top-row">
         <h2 class="username">{{ user.username }}</h2>
       </div>
       <ul class="profile-stats">
         <li><span class="stat-number">{{ user_post_count }}</span> posts</li>
-        <li><span class="stat-number">0</span> followers</li>  <!-- placeholders -->
+        <li><span class="stat-number">0</span> followers</li>
         <li><span class="stat-number">0</span> following</li>
       </ul>
       <div class="profile-bio">
         {{ user.bio if user.bio else "" }}
       </div>
+
+      <!-- Edit Profile -->
       <form method="POST" action="{{ url_for('profile') }}" enctype="multipart/form-data" class="profile-edit-form">
-        <label>Change Picture:</label>
-        <input type="file" name="profile_picture" accept="image/*" />
         <label>Edit Bio:</label>
         <textarea name="bio" rows="2">{{ user.bio or '' }}</textarea>
+
+        <!-- Custom file input -->
+        <label class="custom-file-label">
+          <input type="file" name="profile_picture" accept="image/*" onchange="showFilename(this, 'profilePicName')"/>
+          <span>Select New Picture</span>
+        </label>
+        <span id="profilePicName">No file chosen</span>
+
         <button type="submit" class="btn-primary">Update Profile</button>
       </form>
     </div>
   </div>
 
-  <!-- Tabs: "Posts" / "Saved" -->
+  <!-- Tabs: Posts / Saved -->
   <div class="profile-tabs">
     <button class="tab-button" onclick="showTab('posts')">Posts</button>
     <button class="tab-button" onclick="showTab('saved')">Saved</button>
@@ -46,12 +53,12 @@
     {% for post in posts %}
       <div class="post-tile">
         {% if post.media_filename %}
-          {% set post_ext = post.media_filename|lower %}
-          {% if post_ext.endswith('.png') or post_ext.endswith('.jpg') or post_ext.endswith('.jpeg') or post_ext.endswith('.gif') %}
+          {% set p_ext = post.media_filename|lower %}
+          {% if p_ext.endswith('.png') or p_ext.endswith('.jpg') or p_ext.endswith('.jpeg') or p_ext.endswith('.gif') %}
             <img class="tile-image"
                  src="{{ url_for('static', filename='uploads/' ~ post.media_filename) }}"
-                 alt="Post Media" />
-          {% elif post_ext.endswith('.mp4') or post_ext.endswith('.mov') or post_ext.endswith('.avi') %}
+                 alt="Post Media"/>
+          {% elif p_ext.endswith('.mp4') or p_ext.endswith('.mov') or p_ext.endswith('.avi') %}
             <video class="tile-image"
                    src="{{ url_for('static', filename='uploads/' ~ post.media_filename) }}"
                    controls></video>
@@ -66,23 +73,23 @@
   </div>
 
   <div id="saved" class="profile-posts-grid" style="display: none;">
-    {% for post in saved_posts %}
+    {% for sp in saved_posts %}
       <div class="post-tile">
-        {% if post.media_filename %}
-          {% set sp_ext = post.media_filename|lower %}
+        {% if sp.media_filename %}
+          {% set sp_ext = sp.media_filename|lower %}
           {% if sp_ext.endswith('.png') or sp_ext.endswith('.jpg') or sp_ext.endswith('.jpeg') or sp_ext.endswith('.gif') %}
             <img class="tile-image"
-                 src="{{ url_for('static', filename='uploads/' ~ post.media_filename) }}"
-                 alt="Saved Media" />
+                 src="{{ url_for('static', filename='uploads/' ~ sp.media_filename) }}"
+                 alt="Saved Media"/>
           {% elif sp_ext.endswith('.mp4') or sp_ext.endswith('.mov') or sp_ext.endswith('.avi') %}
             <video class="tile-image"
-                   src="{{ url_for('static', filename='uploads/' ~ post.media_filename) }}"
+                   src="{{ url_for('static', filename='uploads/' ~ sp.media_filename) }}"
                    controls></video>
           {% else %}
-            <p>{{ post.content }}</p>
+            <p>{{ sp.content }}</p>
           {% endif %}
         {% else %}
-          <p>{{ post.content }}</p>
+          <p>{{ sp.content }}</p>
         {% endif %}
       </div>
     {% endfor %}
