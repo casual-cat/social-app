@@ -11,7 +11,7 @@ from werkzeug.utils import secure_filename
 app = Flask(__name__)
 app.secret_key = "YOUR_SUPER_SECRET_KEY"  # Replace with something more secure
 
-# ---------------- CONFIG ----------------
+# ------------- CONFIG -------------
 DATABASE = "social.db"
 UPLOAD_FOLDER = os.path.join("static", "uploads")
 ALLOWED_EXTENSIONS = {".png", ".jpg", ".jpeg", ".gif", ".mp4", ".mov", ".avi"}
@@ -26,7 +26,7 @@ def get_db_connection():
     conn.row_factory = sqlite3.Row
     return conn
 
-# ---------------- INIT DB ----------------
+# ------------- INIT DB -------------
 def init_db():
     if not os.path.exists(DATABASE):
         conn = get_db_connection()
@@ -94,7 +94,7 @@ def init_db():
 
 init_db()
 
-# ---------------- HELPERS ----------------
+# ------------- HELPERS -------------
 def get_current_user_id():
     return session.get("user_id")
 
@@ -110,7 +110,7 @@ def get_user_by_username(username):
     conn.close()
     return user
 
-# ---------------- AUTH ROUTES ----------------
+# ------------- AUTH ROUTES -------------
 @app.route("/")
 def home():
     if get_current_user_id():
@@ -126,10 +126,8 @@ def signup():
 
         conn = get_db_connection()
         try:
-            conn.execute("""
-                INSERT INTO users (username, password_hash) 
-                VALUES (?, ?)
-            """, (username, password_hash))
+            conn.execute("INSERT INTO users (username, password_hash) VALUES (?, ?)",
+                         (username, password_hash))
             conn.commit()
             flash("Sign-up successful! Please log in.", "success")
             return redirect(url_for("login"))
@@ -164,7 +162,7 @@ def logout():
     flash("You have been logged out.", "info")
     return redirect(url_for("login"))
 
-# ---------------- FEED & POSTS ----------------
+# ------------- FEED & POSTS -------------
 @app.route("/feed", methods=["GET", "POST"])
 def feed():
     user_id = get_current_user_id()
@@ -173,7 +171,7 @@ def feed():
 
     conn = get_db_connection()
 
-    # Create a new post
+    # Create new post
     if request.method == "POST":
         content = request.form.get("content", "").strip()
         media_file = request.files.get("media_file")
@@ -192,7 +190,7 @@ def feed():
             """, (user_id, content, media_filename, datetime.now()))
             conn.commit()
 
-    # Fetch stories (<24h old)
+    # Stories (<24h old)
     cutoff = datetime.now() - timedelta(hours=24)
     stories = conn.execute("""
         SELECT s.id, s.media_filename, s.created_at,
@@ -203,7 +201,7 @@ def feed():
         ORDER BY s.created_at DESC
     """, (cutoff,)).fetchall()
 
-    # Fetch posts
+    # Posts with like/save data
     raw_posts = conn.execute("""
         SELECT p.*, u.username, u.profile_picture
         FROM posts p
@@ -214,18 +212,18 @@ def feed():
     posts = []
     for p in raw_posts:
         # Like count
-        like_row = conn.execute("SELECT COUNT(*) AS c FROM likes WHERE post_id=?", (p["id"],)).fetchone()
-        like_count = like_row["c"] if like_row else 0
+        lr = conn.execute("SELECT COUNT(*) AS c FROM likes WHERE post_id=?", (p["id"],)).fetchone()
+        like_count = lr["c"] if lr else 0
 
         # user has liked
-        user_like = conn.execute("SELECT id FROM likes WHERE post_id=? AND user_id=?",
-                                 (p["id"], user_id)).fetchone()
-        user_has_liked = True if user_like else False
+        rlike = conn.execute("SELECT id FROM likes WHERE post_id=? AND user_id=?",
+                             (p["id"], user_id)).fetchone()
+        user_has_liked = True if rlike else False
 
         # user has saved
-        saved_row = conn.execute("SELECT id FROM saved_posts WHERE post_id=? AND user_id=?",
-                                 (p["id"], user_id)).fetchone()
-        user_has_saved = True if saved_row else False
+        rsave = conn.execute("SELECT id FROM saved_posts WHERE post_id=? AND user_id=?",
+                             (p["id"], user_id)).fetchone()
+        user_has_saved = True if rsave else False
 
         posts.append({
             "id": p["id"],
@@ -243,11 +241,9 @@ def feed():
     conn.close()
     return render_template("feed.html", stories=stories, posts=posts, current_user_id=user_id)
 
-
-# -- LIKE/UNLIKE via AJAX (no full refresh) --
+# -- LIKE/UNLIKE (AJAX) --
 @app.route("/like_api/<int:post_id>", methods=["POST"])
 def like_api(post_id):
-    """Toggle like for a post, return JSON with updated like_count and status."""
     user_id = get_current_user_id()
     if not user_id:
         return jsonify({"error": "Not logged in"}), 403
@@ -264,18 +260,15 @@ def like_api(post_id):
         action = "liked"
     conn.commit()
 
-    # get new like_count
-    like_row = conn.execute("SELECT COUNT(*) AS c FROM likes WHERE post_id=?", (post_id,)).fetchone()
+    lr = conn.execute("SELECT COUNT(*) AS c FROM likes WHERE post_id=?", (post_id,)).fetchone()
     conn.close()
-    like_count = like_row["c"] if like_row else 0
+    like_count = lr["c"] if lr else 0
 
     return jsonify({"status": action, "like_count": like_count})
 
-
-# -- SAVE/UNSAVE via AJAX (no full refresh) --
+# -- SAVE/UNSAVE (AJAX) --
 @app.route("/save_api/<int:post_id>", methods=["POST"])
 def save_api(post_id):
-    """Toggle save for a post, return JSON with updated status."""
     user_id = get_current_user_id()
     if not user_id:
         return jsonify({"error": "Not logged in"}), 403
@@ -295,7 +288,6 @@ def save_api(post_id):
 
     return jsonify({"status": action})
 
-
 @app.route("/delete_post/<int:post_id>", methods=["POST"])
 def delete_post(post_id):
     user_id = get_current_user_id()
@@ -309,6 +301,7 @@ def delete_post(post_id):
         flash("Post not found!", "error")
         conn.close()
         return redirect(url_for("feed"))
+
     if post["user_id"] != user_id:
         flash("You cannot delete someone else's post!", "error")
         conn.close()
@@ -324,7 +317,7 @@ def delete_post(post_id):
     flash("Post deleted!", "success")
     return redirect(url_for("feed"))
 
-# ---------------- STORIES ----------------
+# ------------- STORIES -------------
 @app.route("/upload_story", methods=["POST"])
 def upload_story():
     user_id = get_current_user_id()
@@ -334,24 +327,24 @@ def upload_story():
 
     story_file = request.files.get("story_file")
     if story_file and story_file.filename and allowed_file(story_file.filename):
-        secure_name = secure_filename(story_file.filename)
-        path = os.path.join(app.config["UPLOAD_FOLDER"], secure_name)
+        fname = secure_filename(story_file.filename)
+        path = os.path.join(app.config["UPLOAD_FOLDER"], fname)
         story_file.save(path)
 
         conn = get_db_connection()
         conn.execute("""
             INSERT INTO stories (user_id, media_filename, created_at)
             VALUES (?, ?, ?)
-        """, (user_id, secure_name, datetime.now()))
+        """, (user_id, fname, datetime.now()))
         conn.commit()
         conn.close()
         flash("Story uploaded!", "success")
     else:
-        flash("Invalid file or nothing uploaded.", "error")
+        flash("Invalid file or none selected.", "error")
 
     return redirect(url_for("feed"))
 
-# ---------------- PROFILE (self) ----------------
+# ------------- PROFILE (self) -------------
 @app.route("/profile", methods=["GET", "POST"])
 def profile():
     user_id = get_current_user_id()
@@ -365,16 +358,15 @@ def profile():
         new_bio = request.form.get("bio", "")
         pfp_file = request.files.get("profile_picture")
         if pfp_file and pfp_file.filename and allowed_file(pfp_file.filename):
-            fname = secure_filename(pfp_file.filename)
-            fpath = os.path.join(app.config["UPLOAD_FOLDER"], fname)
-            pfp_file.save(fpath)
-            conn.execute("UPDATE users SET profile_picture=? WHERE id=?", (fname, user_id))
+            sec_name = secure_filename(pfp_file.filename)
+            path = os.path.join(app.config["UPLOAD_FOLDER"], sec_name)
+            pfp_file.save(path)
+            conn.execute("UPDATE users SET profile_picture=? WHERE id=?", (sec_name, user_id))
 
         conn.execute("UPDATE users SET bio=? WHERE id=?", (new_bio, user_id))
         conn.commit()
         flash("Profile updated!", "success")
 
-    # re-fetch user
     user = conn.execute("SELECT * FROM users WHERE id=?", (user_id,)).fetchone()
 
     # user posts
@@ -385,6 +377,7 @@ def profile():
         WHERE p.user_id=?
         ORDER BY p.created_at DESC
     """, (user_id,)).fetchall()
+
     posts = []
     for p in raw_posts:
         lr = conn.execute("SELECT COUNT(*) AS c FROM likes WHERE post_id=?", (p["id"],)).fetchone()
@@ -408,6 +401,7 @@ def profile():
         WHERE s.user_id=?
         ORDER BY p.created_at DESC
     """, (user_id,)).fetchall()
+
     saved_posts = []
     for sp in raw_saved:
         lr = conn.execute("SELECT COUNT(*) AS c FROM likes WHERE post_id=?", (sp["id"],)).fetchone()
@@ -431,7 +425,7 @@ def profile():
                            saved_posts=saved_posts,
                            user_post_count=user_post_count)
 
-# ---------------- PUBLIC PROFILE ----------------
+# ------------- PUBLIC PROFILE -------------
 @app.route("/user/<username>")
 def user_profile(username):
     user = get_user_by_username(username)
@@ -447,32 +441,28 @@ def user_profile(username):
         WHERE u.username=?
         ORDER BY p.created_at DESC
     """, (username,)).fetchall()
+    conn.close()
 
     posts = []
     for p in raw_posts:
-        lr = conn.execute("SELECT COUNT(*) AS c FROM likes WHERE post_id=?", (p["id"],)).fetchone()
-        like_count = lr["c"] if lr else 0
+        # we can count likes if you want, or omit
         posts.append({
             "id": p["id"],
             "content": p["content"],
             "media_filename": p["media_filename"],
             "created_at": p["created_at"],
             "username": p["username"],
-            "profile_picture": p["profile_picture"],
-            "like_count": like_count
+            "profile_picture": p["profile_picture"]
         })
-    conn.close()
 
     user_post_count = len(posts)
 
     return render_template("user_profile.html",
                            user=user,
                            posts=posts,
-                           user_post_count=user_post_count,
-                           user_followers_count=0,
-                           user_following_count=0)
+                           user_post_count=user_post_count)
 
-# ---------------- MESSAGES ----------------
+# ------------- MESSAGES (LIVE) -------------
 @app.route("/messages")
 def messages_list():
     user_id = get_current_user_id()
@@ -488,8 +478,8 @@ def messages_list():
     """, (user_id, user_id, user_id)).fetchall()
     conn.close()
 
-    partners = [dict(r) for r in rows]
-    return render_template("messages.html", conversation_partners=partners)
+    conversation_partners = [dict(r) for r in rows]
+    return render_template("messages.html", conversation_partners=conversation_partners)
 
 @app.route("/messages/<username>", methods=["GET", "POST"])
 def direct_messages(username):
@@ -530,7 +520,7 @@ def direct_messages(username):
         messages_list.append({
             "id": msg["id"],
             "content": msg["content"],
-            "created_at": msg["created_at"],
+            "created_at": str(msg["created_at"]),
             "sender_id": msg["sender_id"],
             "sender_name": msg["sender_name"],
             "recipient_id": msg["recipient_id"],
@@ -542,9 +532,46 @@ def direct_messages(username):
                            other_user=other_user,
                            messages_list=messages_list)
 
+# Endpoint to poll for new messages
+@app.route("/messages_api/<username>")
+def messages_api(username):
+    user_id = get_current_user_id()
+    if not user_id:
+        return jsonify({"error": "Not logged in"}), 403
+
+    other_user = get_user_by_username(username)
+    if not other_user:
+        return jsonify({"error": "User does not exist"}), 404
+
+    other_id = other_user["id"]
+    conn = get_db_connection()
+    msgs = conn.execute("""
+        SELECT m.*, s.username as sender_name, r.username as recipient_name
+        FROM messages m
+        JOIN users s ON s.id = m.sender_id
+        JOIN users r ON r.id = m.recipient_id
+        WHERE (m.sender_id=? AND m.recipient_id=?)
+           OR (m.sender_id=? AND m.recipient_id=?)
+        ORDER BY m.created_at ASC
+    """, (user_id, other_id, other_id, user_id)).fetchall()
+    conn.close()
+
+    data = []
+    for msg in msgs:
+        data.append({
+            "id": msg["id"],
+            "content": msg["content"],
+            "created_at": str(msg["created_at"]),
+            "sender_id": msg["sender_id"],
+            "sender_name": msg["sender_name"],
+            "recipient_id": msg["recipient_id"],
+            "recipient_name": msg["recipient_name"]
+        })
+    return jsonify({"messages": data})
+
 @app.route("/uploads/<filename>")
 def uploads(filename):
     return send_from_directory(app.config["UPLOAD_FOLDER"], filename)
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True, port=5001, host="0.0.0.0")

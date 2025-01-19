@@ -17,14 +17,14 @@
     <h2>Chat with {{ other_user.username }}</h2>
     <div id="messageThread" class="message-thread">
       {% for msg in messages_list %}
-        <div class="message-bubble {% if msg.sender_id == session.get('user_id') %} sent {% else %} received {% endif %}">
+        <div class="message-bubble {% if msg.sender_id == session.get('user_id') %}sent{% else %}received{% endif %}">
           <p>{{ msg.content }}</p>
           <span class="msg-time">{{ msg.created_at }}</span>
         </div>
       {% endfor %}
     </div>
 
-    <form method="POST" action="{{ url_for('direct_messages', username=other_user.username) }}" class="message-compose-form" id="messageForm">
+    <form method="POST" action="{{ url_for('direct_messages', username=other_user.username) }}" class="message-compose-form">
       <textarea name="content" rows="2" placeholder="Type a message..."></textarea>
       <button type="submit" class="btn-primary">Send</button>
     </form>
@@ -33,39 +33,41 @@
 
 {% if conversation %}
 <script>
-  const userID = {{ session.get('user_id')|default('null') }};
-  const otherUser = "{{ other_user.username }}";
-  const messageThread = document.getElementById("messageThread");
+const userID = {{ session.get('user_id')|default('null') }};
+const otherUser = "{{ other_user.username }}";
+const messageThread = document.getElementById("messageThread");
 
-  // Poll for new messages every 3 seconds
-  setInterval(() => {
-    fetch(`/messages_api/${otherUser}`)
-      .then(res => res.json())
-      .then(data => {
-        if (data.messages) {
-          // Clear existing
-          messageThread.innerHTML = "";
-          // Rebuild chat
-          data.messages.forEach(msg => {
-            const bubble = document.createElement("div");
-            bubble.classList.add("message-bubble");
-            if (msg.sender_id == userID) {
-              bubble.classList.add("sent");
-            } else {
-              bubble.classList.add("received");
-            }
-            bubble.innerHTML = `
-              <p>${msg.content}</p>
-              <span class="msg-time">${msg.created_at}</span>
-            `;
-            messageThread.appendChild(bubble);
-          });
-          // scroll to bottom
-          messageThread.scrollTop = messageThread.scrollHeight;
+function fetchMessages() {
+  fetch(`/messages_api/${otherUser}`)
+    .then(response => response.json())
+    .then(data => {
+      if (data.error) {
+        console.error("Messages error:", data.error);
+        return;
+      }
+      messageThread.innerHTML = "";
+      data.messages.forEach(msg => {
+        const bubble = document.createElement("div");
+        bubble.classList.add("message-bubble");
+        if(msg.sender_id == userID) {
+          bubble.classList.add("sent");
+        } else {
+          bubble.classList.add("received");
         }
-      })
-      .catch(err => console.log("Error fetching messages:", err));
-  }, 3000);
+        bubble.innerHTML = `
+          <p>${msg.content}</p>
+          <span class="msg-time">${msg.created_at}</span>
+        `;
+        messageThread.appendChild(bubble);
+      });
+      // auto scroll
+      messageThread.scrollTop = messageThread.scrollHeight;
+    })
+    .catch(err => console.error("fetchMessages error:", err));
+}
+
+// Poll every 3s
+setInterval(fetchMessages, 3000);
 </script>
 {% endif %}
 {% endblock %}
