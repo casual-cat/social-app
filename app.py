@@ -1,5 +1,5 @@
 import os
-import mysql.connector  # instead of sqlite3
+import mysql.connector
 from datetime import datetime, timedelta
 from flask import (
     Flask, render_template, request, redirect, url_for,
@@ -9,16 +9,18 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
+
+# Read SECRET_KEY from environment or default
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "YOUR_SUPER_SECRET_KEY")
 
-# ----------- MySQL CONFIG (read from environment) -----------
+# MySQL config from environment variables
 MYSQL_HOST = os.environ.get("MYSQL_HOST", "localhost")
 MYSQL_PORT = int(os.environ.get("MYSQL_PORT", "3306"))
 MYSQL_USER = os.environ.get("MYSQL_USER", "root")
 MYSQL_PASS = os.environ.get("MYSQL_PASS", "password")
 MYSQL_DB   = os.environ.get("MYSQL_DB", "socialdb")
 
-# Folder to store uploads (images, videos, etc.)
+# Folder for uploaded images/videos
 UPLOAD_FOLDER = os.path.join("static", "uploads")
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 
@@ -29,21 +31,20 @@ def allowed_file(filename):
     return ext in ALLOWED_EXTENSIONS
 
 def get_db_connection():
-    """Create a new MySQL connection. 
-       For real apps, consider a connection pool or an ORM.
+    """Create a new MySQL connection. For production, 
+       consider using a connection pool or ORM.
     """
-    conn = mysql.connector.connect(
+    return mysql.connector.connect(
         host=MYSQL_HOST,
         port=MYSQL_PORT,
         user=MYSQL_USER,
         password=MYSQL_PASS,
         database=MYSQL_DB
     )
-    return conn
 
-# ------------- INIT DB -------------
+# ----------------- INIT DB -----------------
 def init_db():
-    """Create tables if they don't exist."""
+    """Create tables if they don't exist (harmless if called multiple times)."""
     conn = get_db_connection()
     cursor = conn.cursor()
 
@@ -109,23 +110,14 @@ def init_db():
     cursor.close()
     conn.close()
 
-init_db()  # Create tables once
+# Call init_db() once (each Pod can do it; it's idempotent).
+init_db()
 
-# ------------- HELPER FUNCTIONS -------------
 def get_current_user_id():
     return session.get("user_id")
 
-# etc. You keep your same routes below, 
-# just replacing any sqlite references with get_db_connection() calls.
-# The main difference is how you do queries with mysql.connector.
 
-# For queries, do something like:
-# conn = get_db_connection()
-# cursor = conn.cursor(dictionary=True) # or leave default if you prefer
-# cursor.execute("SELECT ...", (params))
-# rows = cursor.fetchall()
-# etc.
-# then cursor.close(), conn.close()
+# ------------- ROUTES -------------
 
 @app.route("/")
 def home():
@@ -142,7 +134,6 @@ def signup():
 
         conn = get_db_connection()
         cursor = conn.cursor()
-        # we might catch a duplicate error if username already exists
         try:
             cursor.execute("""
                 INSERT INTO users (username, password_hash)
@@ -152,7 +143,7 @@ def signup():
             flash("Sign-up successful! Please log in.", "success")
             return redirect(url_for("login"))
         except mysql.connector.Error as e:
-            # Error 1062 is duplicate entry for a unique index in MySQL
+            # 1062 = duplicate entry in MySQL
             if e.errno == 1062:
                 flash("Username already exists!", "error")
             else:
@@ -202,6 +193,7 @@ def feed():
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
 
+    # Create new post
     if request.method == "POST":
         content = request.form.get("content", "").strip()
         media_file = request.files.get("media_file")
@@ -221,7 +213,7 @@ def feed():
             """, (user_id, content, media_filename, now))
             conn.commit()
 
-    # Get stories <24h
+    # Stories (<24h)
     cutoff = datetime.now() - timedelta(hours=24)
     cursor.execute("""
         SELECT s.id, s.media_filename, s.created_at,
@@ -233,7 +225,7 @@ def feed():
     """, (cutoff,))
     stories = cursor.fetchall()
 
-    # Get all posts + user info
+    # All posts
     cursor.execute("""
         SELECT p.id, p.user_id, p.content, p.media_filename, p.created_at,
                u.username, u.profile_picture
@@ -252,14 +244,12 @@ def feed():
         like_count = lr["c"] if lr else 0
 
         # user has liked?
-        cursor.execute("SELECT id FROM likes WHERE post_id=%s AND user_id=%s",
-                       (post_id, user_id))
+        cursor.execute("SELECT id FROM likes WHERE post_id=%s AND user_id=%s", (post_id, user_id))
         rlike = cursor.fetchone()
         user_has_liked = True if rlike else False
 
         # user has saved?
-        cursor.execute("SELECT id FROM saved_posts WHERE post_id=%s AND user_id=%s",
-                       (post_id, user_id))
+        cursor.execute("SELECT id FROM saved_posts WHERE post_id=%s AND user_id=%s", (post_id, user_id))
         rsave = cursor.fetchone()
         user_has_saved = True if rsave else False
 
@@ -292,23 +282,19 @@ def like_api(post_id):
     row = cursor.fetchone()
 
     if row:
-        # unlike
         cursor.execute("DELETE FROM likes WHERE id=%s", (row["id"],))
         action = "unliked"
     else:
-        # like
         cursor.execute("INSERT INTO likes (post_id, user_id) VALUES (%s, %s)", (post_id, user_id))
         action = "liked"
     conn.commit()
 
-    # new like count
     cursor.execute("SELECT COUNT(*) AS c FROM likes WHERE post_id=%s", (post_id,))
     lr = cursor.fetchone()
     like_count = lr["c"] if lr else 0
 
     cursor.close()
     conn.close()
-
     return jsonify({"status": action, "like_count": like_count})
 
 @app.route("/save_api/<int:post_id>", methods=["POST"])
@@ -323,18 +309,15 @@ def save_api(post_id):
     row = cursor.fetchone()
 
     if row:
-        # unsave
         cursor.execute("DELETE FROM saved_posts WHERE id=%s", (row["id"],))
         action = "unsaved"
     else:
-        # save
         cursor.execute("INSERT INTO saved_posts (post_id, user_id) VALUES (%s, %s)", (post_id, user_id))
         action = "saved"
     conn.commit()
 
     cursor.close()
     conn.close()
-
     return jsonify({"status": action})
 
 @app.route("/delete_post/<int:post_id>", methods=["POST"])
@@ -361,7 +344,6 @@ def delete_post(post_id):
         conn.close()
         return redirect(url_for("feed"))
 
-    # remove post, likes, saved
     cursor.execute("DELETE FROM posts WHERE id=%s", (post_id,))
     cursor.execute("DELETE FROM likes WHERE post_id=%s", (post_id,))
     cursor.execute("DELETE FROM saved_posts WHERE post_id=%s", (post_id,))
@@ -373,7 +355,6 @@ def delete_post(post_id):
     flash("Post deleted!", "success")
     return redirect(url_for("feed"))
 
-# ------------- STORIES -------------
 @app.route("/upload_story", methods=["POST"])
 def upload_story():
     user_id = get_current_user_id()
@@ -404,7 +385,6 @@ def upload_story():
 
     return redirect(url_for("feed"))
 
-# ------------- PROFILE (self) -------------
 @app.route("/profile", methods=["GET", "POST"])
 def profile():
     user_id = get_current_user_id()
@@ -429,7 +409,6 @@ def profile():
         conn.commit()
         flash("Profile updated!", "success")
 
-        # re-fetch updated user
         cursor.execute("SELECT * FROM users WHERE id=%s", (user_id,))
         user = cursor.fetchone()
 
@@ -497,12 +476,10 @@ def profile():
                            saved_posts=saved_posts,
                            user_post_count=user_post_count)
 
-# ------------- PUBLIC PROFILE -------------
 @app.route("/user/<username>")
 def user_profile(username):
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
-
     cursor.execute("SELECT * FROM users WHERE username=%s", (username,))
     user = cursor.fetchone()
     if not user:
@@ -519,6 +496,8 @@ def user_profile(username):
         ORDER BY p.created_at DESC
     """, (username,))
     raw_posts = cursor.fetchall()
+    cursor.close()
+    conn.close()
 
     posts = []
     for p in raw_posts:
@@ -531,17 +510,13 @@ def user_profile(username):
             "profile_picture": p["profile_picture"]
         })
 
-    cursor.close()
-    conn.close()
-
-    user_post_count = len(posts)
+    user_post_count = len(raw_posts)
 
     return render_template("user_profile.html",
                            user=user,
                            posts=posts,
                            user_post_count=user_post_count)
 
-# ------------- MESSAGES (LIVE) -------------
 @app.route("/messages")
 def messages_list():
     user_id = get_current_user_id()
@@ -561,7 +536,7 @@ def messages_list():
     cursor.close()
     conn.close()
 
-    conversation_partners = [dict(r) for r in rows]
+    conversation_partners = rows
     return render_template("messages.html", conversation_partners=conversation_partners)
 
 @app.route("/messages/<username>", methods=["GET", "POST"])
@@ -600,7 +575,6 @@ def direct_messages(username):
         ORDER BY m.created_at ASC
     """, (user_id, other_id, other_id, user_id))
     msgs = cursor.fetchall()
-
     cursor.close()
     conn.close()
 

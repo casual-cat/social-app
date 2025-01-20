@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: flask-deployment
 spec:
-  replicas: 3 
+  replicas: 2
   selector:
     matchLabels:
       app: flask-app
@@ -14,11 +14,10 @@ spec:
     spec:
       containers:
       - name: flask-container
-        image: gabidelcea/my-flask-app:v1
+        image: your-dockerhub/my-flask-app:v1
         ports:
-        - containerPort: 5000
+        - containerPort: 5001
         env:
-        # from ConfigMap
         - name: MYSQL_HOST
           valueFrom:
             configMapKeyRef:
@@ -40,9 +39,14 @@ spec:
               name: flask-config
               key: MYSQL_USER
 
-        # from Secret
         - name: MYSQL_PASS
           valueFrom:
             secretKeyRef:
               name: flask-secrets
               key: MYSQL_PASS
+
+        - name: FLASK_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: flask-secrets
+              key: FLASK_SECRET_KEY

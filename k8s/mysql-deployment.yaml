@@ -19,13 +19,9 @@ spec:
         - name: MYSQL_ROOT_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: mysql-secrets
+              name: mysql-secrets  # a different secret that holds root pass
               key: mysql-root-pass
         - name: MYSQL_DATABASE
-          valueFrom:
-            configMapKeyRef:
-              name: mysql-config
-              key: mysql-dbname
+          value: "socialdb"
         ports:
         - containerPort: 3306
-
