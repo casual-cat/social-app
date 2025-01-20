@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flask-deployment
+spec:
+  replicas: 3 
+  selector:
+    matchLabels:
+      app: flask-app
+  template:
+    metadata:
+      labels:
+        app: flask-app
+    spec:
+      containers:
+      - name: flask-container
+        image: gabidelcea/my-flask-app:v1
+        ports:
+        - containerPort: 5000
+        env:
+        # from ConfigMap
+        - name: MYSQL_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: flask-config
+              key: MYSQL_HOST
+        - name: MYSQL_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: flask-config
+              key: MYSQL_PORT
+        - name: MYSQL_DB
+          valueFrom:
+            configMapKeyRef:
+              name: flask-config
+              key: MYSQL_DB
+        - name: MYSQL_USER
+          valueFrom:
+            configMapKeyRef:
+              name: flask-config
+              key: MYSQL_USER
+
+        # from Secret
+        - name: MYSQL_PASS
+          valueFrom:
+            secretKeyRef:
+              name: flask-secrets
+              key: MYSQL_PASS
