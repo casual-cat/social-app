@@ -2,6 +2,8 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: mysql-deployment
+  labels:
+    app: mysql
 spec:
   replicas: 1
   selector:
@@ -19,9 +21,16 @@ spec:
         - name: MYSQL_ROOT_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: mysql-secrets  # a different secret that holds root pass
+              name: mysql-secrets
               key: mysql-root-pass
         - name: MYSQL_DATABASE
           value: "socialdb"
         ports:
         - containerPort: 3306
+        volumeMounts:
+        - name: mysql-data
+          mountPath: /var/lib/mysql
+      volumes:
+      - name: mysql-data
+        persistentVolumeClaim:
+          claimName: mysql-pvc
