@@ -32,5 +32,6 @@ spec:
           mountPath: /var/lib/mysql
       volumes:
       - name: mysql-data
-        persistentVolumeClaim:
-          claimName: mysql-pvc
+        hostPath:
+          path: /data/mysql  # Path on the host node
+          type: DirectoryOrCreate
