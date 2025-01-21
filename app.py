@@ -31,9 +31,7 @@ def allowed_file(filename):
     return ext in ALLOWED_EXTENSIONS
 
 def get_db_connection():
-    """Create a new MySQL connection. For production, 
-       consider using a connection pool or ORM.
-    """
+    """Create a new MySQL connection. For production, consider a pool/ORM."""
     return mysql.connector.connect(
         host=MYSQL_HOST,
         port=MYSQL_PORT,
@@ -42,9 +40,9 @@ def get_db_connection():
         database=MYSQL_DB
     )
 
-# ----------------- INIT DB -----------------
+# ----------- INIT DB -----------
 def init_db():
-    """Create tables if they don't exist (harmless if called multiple times)."""
+    """Create tables IF NOT EXISTS (called once)."""
     conn = get_db_connection()
     cursor = conn.cursor()
 
@@ -110,15 +108,22 @@ def init_db():
     cursor.close()
     conn.close()
 
-# Call init_db() once (each Pod can do it; it's idempotent).
 init_db()
 
 def get_current_user_id():
     return session.get("user_id")
 
+def get_user_by_username(username):
+    """Query the 'users' table by username."""
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("SELECT * FROM users WHERE username=%s", (username,))
+    user = cursor.fetchone()
+    cursor.close()
+    conn.close()
+    return user
 
 # ------------- ROUTES -------------
-
 @app.route("/")
 def home():
     if get_current_user_id():
@@ -143,8 +148,7 @@ def signup():
             flash("Sign-up successful! Please log in.", "success")
             return redirect(url_for("login"))
         except mysql.connector.Error as e:
-            # 1062 = duplicate entry in MySQL
-            if e.errno == 1062:
+            if e.errno == 1062:  # Duplicate entry
                 flash("Username already exists!", "error")
             else:
                 flash(f"MySQL Error: {e}", "error")
@@ -193,7 +197,6 @@ def feed():
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
 
-    # Create new post
     if request.method == "POST":
         content = request.form.get("content", "").strip()
         media_file = request.files.get("media_file")
@@ -322,6 +325,7 @@ def save_api(post_id):
 
 @app.route("/delete_post/<int:post_id>", methods=["POST"])
 def delete_post(post_id):
+    """Allow user to delete their own post, or admin can delete any post."""
     user_id = get_current_user_id()
     if not user_id:
         flash("You must be logged in to delete a post.", "error")
@@ -338,22 +342,27 @@ def delete_post(post_id):
         conn.close()
         return redirect(url_for("feed"))
 
-    if post["user_id"] != user_id:
+    # Check if current user is admin or the owner
+    current_username = session.get("username")
+    is_admin = (current_username == "admin")
+
+    if is_admin or (post["user_id"] == user_id):
+        # remove post, likes, saved
+        cursor.execute("DELETE FROM posts WHERE id=%s", (post_id,))
+        cursor.execute("DELETE FROM likes WHERE post_id=%s", (post_id,))
+        cursor.execute("DELETE FROM saved_posts WHERE post_id=%s", (post_id,))
+        conn.commit()
+
+        cursor.close()
+        conn.close()
+
+        flash("Post deleted!", "success")
+        return redirect(url_for("feed"))
+    else:
         flash("You cannot delete someone else's post!", "error")
         cursor.close()
         conn.close()
         return redirect(url_for("feed"))
-
-    cursor.execute("DELETE FROM posts WHERE id=%s", (post_id,))
-    cursor.execute("DELETE FROM likes WHERE post_id=%s", (post_id,))
-    cursor.execute("DELETE FROM saved_posts WHERE post_id=%s", (post_id,))
-    conn.commit()
-
-    cursor.close()
-    conn.close()
-
-    flash("Post deleted!", "success")
-    return redirect(url_for("feed"))
 
 @app.route("/upload_story", methods=["POST"])
 def upload_story():
@@ -385,16 +394,38 @@ def upload_story():
 
     return redirect(url_for("feed"))
 
+# ========== Profile Editing ==========
 @app.route("/profile", methods=["GET", "POST"])
 def profile():
+    """Regular user editing their own profile."""
     user_id = get_current_user_id()
     if not user_id:
         return redirect(url_for("login"))
 
+    return _edit_profile_logic(user_id)
+
+@app.route("/admin_edit/<int:target_user_id>", methods=["GET", "POST"])
+def admin_edit_profile(target_user_id):
+    """Admin can edit ANY user's profile."""
+    if session.get("username") != "admin":
+        flash("Access denied. Admins only.", "error")
+        return redirect(url_for("feed"))
+
+    return _edit_profile_logic(target_user_id, is_admin=True)
+
+def _edit_profile_logic(target_user_id, is_admin=False):
+    """Internal function to do the actual profile fetch/update logic."""
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
-    cursor.execute("SELECT * FROM users WHERE id=%s", (user_id,))
+
+    # Fetch the user record we want to edit
+    cursor.execute("SELECT * FROM users WHERE id=%s", (target_user_id,))
     user = cursor.fetchone()
+    if not user:
+        cursor.close()
+        conn.close()
+        flash("User does not exist!", "error")
+        return redirect(url_for("feed"))
 
     if request.method == "POST":
         new_bio = request.form.get("bio", "")
@@ -403,23 +434,25 @@ def profile():
             sec_name = secure_filename(pfp_file.filename)
             path = os.path.join(app.config["UPLOAD_FOLDER"], sec_name)
             pfp_file.save(path)
-            cursor.execute("UPDATE users SET profile_picture=%s WHERE id=%s", (sec_name, user_id))
+            cursor.execute("UPDATE users SET profile_picture=%s WHERE id=%s",
+                           (sec_name, target_user_id))
 
-        cursor.execute("UPDATE users SET bio=%s WHERE id=%s", (new_bio, user_id))
+        cursor.execute("UPDATE users SET bio=%s WHERE id=%s", (new_bio, target_user_id))
         conn.commit()
         flash("Profile updated!", "success")
 
-        cursor.execute("SELECT * FROM users WHERE id=%s", (user_id,))
+        # Re-fetch updated user
+        cursor.execute("SELECT * FROM users WHERE id=%s", (target_user_id,))
         user = cursor.fetchone()
 
-    # user posts
+    # Grab user's posts
     cursor.execute("""
         SELECT p.*, u.username, u.profile_picture
         FROM posts p
         JOIN users u ON p.user_id = u.id
         WHERE p.user_id=%s
         ORDER BY p.created_at DESC
-    """, (user_id,))
+    """, (target_user_id,))
     raw_posts = cursor.fetchall()
 
     posts = []
@@ -438,7 +471,7 @@ def profile():
             "like_count": like_count
         })
 
-    # user saved
+    # Grab user's saved posts
     cursor.execute("""
         SELECT p.*, u.username, u.profile_picture
         FROM saved_posts s
@@ -446,7 +479,7 @@ def profile():
         JOIN users u ON p.user_id = u.id
         WHERE s.user_id=%s
         ORDER BY p.created_at DESC
-    """, (user_id,))
+    """, (target_user_id,))
     raw_saved = cursor.fetchall()
 
     saved_posts = []
@@ -465,16 +498,18 @@ def profile():
             "like_count": lc
         })
 
+    user_post_count = len(posts)
+
     cursor.close()
     conn.close()
 
-    user_post_count = len(posts)
-
+    # Reuse 'profile.html' template, or create a separate one if needed
     return render_template("profile.html",
                            user=user,
                            posts=posts,
                            saved_posts=saved_posts,
-                           user_post_count=user_post_count)
+                           user_post_count=user_post_count,
+                           is_admin_edit=is_admin)
 
 @app.route("/user/<username>")
 def user_profile(username):
@@ -517,6 +552,7 @@ def user_profile(username):
                            posts=posts,
                            user_post_count=user_post_count)
 
+# ----- MESSAGES -----
 @app.route("/messages")
 def messages_list():
     user_id = get_current_user_id()
@@ -551,7 +587,6 @@ def direct_messages(username):
         return redirect(url_for("messages_list"))
 
     other_id = other_user["id"]
-
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
 
